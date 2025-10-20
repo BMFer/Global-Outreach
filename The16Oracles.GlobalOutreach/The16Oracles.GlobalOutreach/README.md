@@ -97,18 +97,52 @@ Press Ctrl+C to stop the bot...
 
 ## How It Works
 
-1. Users post messages in their native language
-2. The bot detects the language automatically
-3. Non-English messages are translated to English for the channel
-4. English responses are translated back to the original user's language
-5. Conversations flow naturally across language barriers
+The bot uses **channel-based language configuration** with **dual-translation support**. Each channel is assigned a specific language, and the bot provides translations to help bridge language barriers.
+
+### Translation Flow:
+
+1. **Configure Language Channels**: Set up Discord channels for each language (Spanish, Chinese, French, etc.)
+2. **Map Channels in Config**: Add the channel IDs to your `appsettings.json` under the `Language` array
+3. **Dual-Translation System**:
+   - **Foreign Language → Channel Language**: If someone posts in a different language, it's translated to the channel's language
+   - **Channel Language → English**: If someone posts in the channel's native language, it's also translated to English for broader understanding
+
+### Translation Scenarios:
+
+#### Scenario 1: Foreign Language Posted in Channel
+**Spanish Channel** - User posts "Hello" (English):
+- ✅ Bot translates to Spanish: "Hola"
+- User posts "你好" (Chinese):
+- ✅ Bot translates to Spanish: "Hola"
+
+#### Scenario 2: Native Language Posted in Channel
+**Spanish Channel** - User posts "Hola" (Spanish):
+- ✅ Bot translates to English: "Hello"
+
+**Chinese Channel** - User posts "早上好" (Chinese):
+- ✅ Bot translates to English: "Good morning"
+
+#### Scenario 3: English Channel
+**English Channel** - User posts "Hello" (English):
+- ✅ Bot translates to English: "Hello" (for consistency)
+
+**English Channel** - User posts "Bonjour" (French):
+- ✅ Bot translates to English: "Hello"
+
+### Key Benefits:
+
+- **Language Learners**: Native speakers can post in their language and see the English translation
+- **Cross-Language Communication**: Anyone can post in any language and it gets translated to the channel's language
+- **Global Accessibility**: English translations make all conversations accessible to English speakers
 
 ## Project Structure
 
 ```
 The16Oracles.GlobalOutreach/
 ├── Models/
-│   ├── BotConfiguration.cs          # Configuration settings
+│   ├── BotConfiguration.cs          # Configuration settings with language helpers
+│   ├── Language.cs                  # Language model (Name, ChannelId)
+│   ├── LanguageConfiguration.cs     # Language array container
 │   ├── TranslationRequest.cs        # Translation request model
 │   └── UserLanguageContext.cs       # User language tracking
 ├── Services/

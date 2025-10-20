@@ -58,32 +58,58 @@ namespace The16Oracles.GlobalOutreach.Services
 
             try
             {
+                // Get the channel ID
+                var channelId = e.Channel.Id.ToString();
+
+                // Check if this channel is configured for a specific language
+                var channelLanguage = _config.GetLanguageByChannelId(channelId);
+
+                if (string.IsNullOrEmpty(channelLanguage))
+                {
+                    // Channel not configured, ignore message
+                    Console.WriteLine($"[{e.Channel.Name}] Channel not configured for translation. Skipping.");
+                    return;
+                }
+
+                Console.WriteLine($"[{e.Channel.Name}] Channel language: {channelLanguage}");
+
                 // Detect the language of the message
                 var detectedLanguage = await _translationService.DetectLanguageAsync(e.Message.Content);
-                Console.WriteLine($"[{e.Author.Username}] Language detected: {detectedLanguage}");
+                Console.WriteLine($"[{e.Author.Username}] Message language detected: {detectedLanguage}");
 
                 // Update user's language context
                 _languageTracker.UpdateUserLanguage(e.Author.Id, detectedLanguage);
 
-                // If message is not in English, translate to English
-                if (!IsEnglish(detectedLanguage))
+                // If message is NOT in the channel's designated language, translate it
+                if (!IsSameLanguage(detectedLanguage, channelLanguage))
                 {
                     var translatedText = await _translationService.TranslateAsync(
                         e.Message.Content,
-                        "English",
+                        channelLanguage,
                         detectedLanguage);
 
                     // Post translation to the channel
                     await e.Channel.SendMessageAsync(
-                        $"**[Translation from {detectedLanguage}]** {e.Author.Mention} said:\n{translatedText}");
+                        $"**[Translation to {channelLanguage}]** {e.Author.Mention} said:\n{translatedText}");
 
-                    Console.WriteLine($"Translated to English: {translatedText}");
+                    Console.WriteLine($"Translated from {detectedLanguage} to {channelLanguage}: {translatedText}");
                 }
-                // If message is in English, check if we should translate back to other languages
+                else if (IsSameLanguage(detectedLanguage, channelLanguage))
+                {
+                    var translatedText = await _translationService.TranslateAsync(
+                         e.Message.Content,
+                         "English",
+                         channelLanguage);
+
+                    // Post translation to the channel
+                    await e.Channel.SendMessageAsync(
+                        $"**[Translation to English]** {e.Author.Mention} said:\n{translatedText}");
+
+                    Console.WriteLine($"Translated from {channelLanguage} to English: {translatedText}");
+                }
                 else
                 {
-                    // Check if this is a reply or in a conversation with non-English speakers
-                    await HandleEnglishMessageAsync(e);
+                    Console.WriteLine($"Message already in language foriegn to this channel, no translation available.");
                 }
             }
             catch (Exception ex)
@@ -93,46 +119,27 @@ namespace The16Oracles.GlobalOutreach.Services
             }
         }
 
-        private async Task HandleEnglishMessageAsync(MessageCreateEventArgs e)
+        private bool IsSameLanguage(string detectedLanguage, string targetLanguage)
         {
-            // Get recent messages from the channel to determine if this is a response
-            var recentMessages = await e.Channel.GetMessagesAsync(10);
+            // Normalize language names for comparison
+            var normalizedDetected = NormalizeLanguageName(detectedLanguage);
+            var normalizedTarget = NormalizeLanguageName(targetLanguage);
 
-            // Find recent non-English speakers
-            var recentNonEnglishUsers = recentMessages
-                .Where(m => !m.Author.IsBot && m.Author.Id != e.Author.Id)
-                .Select(m => m.Author.Id)
-                .Distinct()
-                .Where(userId => _languageTracker.HasUserContext(userId))
-                .ToList();
-
-            // If there are recent non-English speakers, translate the English message back
-            foreach (var userId in recentNonEnglishUsers)
-            {
-                var targetLanguage = _languageTracker.GetUserLanguage(userId);
-                if (targetLanguage != null && !IsEnglish(targetLanguage))
-                {
-                    var user = recentMessages.First(m => m.Author.Id == userId).Author;
-                    var translatedText = await _translationService.TranslateAsync(
-                        e.Message.Content,
-                        targetLanguage,
-                        "English");
-
-                    await e.Channel.SendMessageAsync(
-                        $"**[Translation to {targetLanguage}]** {user.Mention}:\n{translatedText}");
-
-                    Console.WriteLine($"Translated English message to {targetLanguage}: {translatedText}");
-
-                    // Only translate for the most recent non-English speaker to avoid spam
-                    break;
-                }
-            }
+            return normalizedDetected.Equals(normalizedTarget, StringComparison.OrdinalIgnoreCase);
         }
 
-        private bool IsEnglish(string language)
+        private string NormalizeLanguageName(string language)
         {
-            return language.Equals("English", StringComparison.OrdinalIgnoreCase) ||
-                   language.Equals("en", StringComparison.OrdinalIgnoreCase);
+            // Handle common variations
+            return language.ToLower() switch
+            {
+                "en" or "eng" => "english",
+                "es" or "spa" => "spanish",
+                "zh" or "chi" or "cn" => "chinese",
+                "fr" or "fra" or "fre" => "french",
+                "ar" or "ara" or "arabic" or "saudi arabia" or "saudi-arabia" => "arabic",
+                _ => language.ToLower()
+            };
         }
     }
 }

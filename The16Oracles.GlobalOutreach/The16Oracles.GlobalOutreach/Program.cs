@@ -26,7 +26,8 @@ namespace The16Oracles.GlobalOutreach
                 OpenAIApiKey = configuration["OpenAI:ApiKey"] ??
                     Environment.GetEnvironmentVariable("OPENAI_API_KEY") ??
                     string.Empty,
-                OpenAIModel = configuration["OpenAI:Model"] ?? "gpt-4o-mini"
+                OpenAIModel = configuration["OpenAI:Model"] ?? "gpt-4o-mini",
+                Languages = configuration.GetSection("Language").Get<Language[]>() ?? Array.Empty<Language>()
             };
 
             // Validate configuration
@@ -45,7 +46,22 @@ namespace The16Oracles.GlobalOutreach
             }
 
             Console.WriteLine("Configuration loaded successfully!");
-            Console.WriteLine($"OpenAI Model: {botConfig.OpenAIModel}\n");
+            Console.WriteLine($"OpenAI Model: {botConfig.OpenAIModel}");
+            Console.WriteLine($"Configured Languages: {botConfig.Languages.Length}");
+
+            if (botConfig.Languages.Length > 0)
+            {
+                Console.WriteLine("\nLanguage Channel Mappings:");
+                foreach (var lang in botConfig.Languages)
+                {
+                    Console.WriteLine($"  - {lang.Name}: Channel ID {lang.ChannelId}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("WARNING: No language channels configured!");
+            }
+            Console.WriteLine();
 
             // Initialize services
             var httpClient = new HttpClient();

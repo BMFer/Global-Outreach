@@ -1,19 +1,21 @@
 # Global-Outreach
 
-A two-way language translator bot for Discord channels that bridges global discussions without breaking context.
+A channel-based language translator bot for Discord that bridges global discussions with intelligent dual-translation support.
 
 ## Overview
 
-Global-Outreach listens for messages in Discord channels, automatically identifies the original language, translates them to English, and re-translates English responses back into the local language. This enables seamless multilingual conversations where participants can communicate in their native languages.
+Global-Outreach is a Discord bot that automatically translates messages based on channel-specific language configurations. Each channel is assigned a target language, and the bot provides dual translations: converting foreign messages to the channel's language AND translating native messages to English. This enables seamless multilingual communication and language learning.
 
 ## Features
 
-- **Automatic Language Detection**: Identifies the source language of incoming messages
-- **Two-Way Translation**:
-  - Translates foreign language messages to English for the channel
-  - Translates English responses back to the original language
+- **Channel-Based Language Assignment**: Configure specific languages for each Discord channel
+- **Automatic Language Detection**: Identifies the source language of incoming messages using OpenAI
+- **Dual-Translation System**:
+  - Translates foreign language messages to the channel's designated language
+  - Translates channel-native messages to English for broader accessibility
+- **Smart Language Normalization**: Handles language variations (e.g., "Spanish"/"es"/"spa")
 - **Context Preservation**: Maintains conversation flow and meaning across translations
-- **Powered by OpenAI**: Uses OpenAI's translation API for accurate, natural translations
+- **Powered by OpenAI**: Uses OpenAI's GPT models for accurate, natural translations
 
 ## Technology Stack
 
@@ -68,13 +70,28 @@ Invite the bot to your server with these permissions enabled.
 
 ## How It Works
 
-1. A user posts a message in their native language (e.g., Spanish)
-2. The bot detects the message and identifies the language
-3. The message is translated to English and posted in the channel
-4. When English speakers respond, the bot translates their replies back to Spanish
-5. The original user receives the translation in their language
+### Channel-Based Translation Flow
 
-This creates a seamless conversation where everyone can communicate in their preferred language.
+1. **Setup Language Channels**: Create Discord channels for different languages (Spanish, Chinese, French, Arabic, etc.)
+2. **Configure Channel Mappings**: Map each channel ID to its language in `appsettings.json`
+3. **Automatic Dual Translation**:
+   - **Foreign → Native**: When a user posts in a different language, the bot translates it to the channel's language
+   - **Native → English**: When a user posts in the channel's language, the bot also translates it to English
+
+### Example Scenarios
+
+**Spanish Channel**:
+- User posts "Hello" (English) → Bot translates: "Hola" (Spanish)
+- User posts "Hola" (Spanish) → Bot translates: "Hello" (English)
+
+**Chinese Channel**:
+- User posts "Good morning" (English) → Bot translates: "早上好" (Chinese)
+- User posts "早上好" (Chinese) → Bot translates: "Good morning" (English)
+
+This creates a rich multilingual environment where:
+- Language learners can see translations of native content
+- Non-native speakers can participate in any language
+- English speakers can follow all conversations
 
 ## Project Structure
 
@@ -82,10 +99,24 @@ This creates a seamless conversation where everyone can communicate in their pre
 Global-Outreach/
 ├── The16Oracles.GlobalOutreach/
 │   ├── The16Oracles.GlobalOutreach/     # Main bot project
-│   │   ├── Class1.cs                     # Entry point
+│   │   ├── Models/
+│   │   │   ├── BotConfiguration.cs      # Configuration with language helpers
+│   │   │   ├── Language.cs              # Language-to-channel mapping
+│   │   │   ├── LanguageConfiguration.cs # Language array container
+│   │   │   ├── TranslationRequest.cs    # Translation request model
+│   │   │   └── UserLanguageContext.cs   # User language tracking
+│   │   ├── Services/
+│   │   │   ├── DiscordBotService.cs     # Discord bot with channel-based translation
+│   │   │   ├── OpenAITranslationService.cs  # OpenAI API integration
+│   │   │   ├── LanguageTrackingService.cs   # User language context tracking
+│   │   │   └── I*.cs                    # Service interfaces
+│   │   ├── Program.cs                   # Application entry point
+│   │   ├── appsettings.json             # Configuration (gitignored)
+│   │   ├── appsettings.example.json     # Configuration template
 │   │   └── The16Oracles.GlobalOutreach.csproj
 │   └── The16Oracles.GlobalOutreach.sln  # Solution file
 ├── CLAUDE.md                             # AI assistant guidance
+├── COPYRIGHT.md                          # License and copyright info
 ├── .gitignore
 └── README.md
 ```
